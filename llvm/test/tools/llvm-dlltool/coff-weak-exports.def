@@ -1,7 +1,6 @@
 ; RUN: llvm-dlltool -m i386:x86-64 --input-def %s --output-lib %t.a
 ; RUN: llvm-nm %t.a | FileCheck %s
-; RUN: llvm-readobj %t.a | FileCheck -check-prefix=ARCH %s
-; RUN: llvm-readobj --symbols %t.a | FileCheck -check-prefix=SYMBOLS %s
+; RUN: llvm-objdump -s -t %t.a | FileCheck -check-prefix=CONTENTS %s
 
 LIBRARY test.dll
 EXPORTS
@@ -16,31 +15,33 @@ ImpLibName2 = Implementation2 == AltTestFunction2
 ; matter for the import library
 ImpLibName3 = kernel32.Sleep
 
-; CHECK:      U AltTestFunction
-; CHECK-NEXT: W TestFunction
-; CHECK:      U __imp_AltTestFunction
-; CHECK-NEXT: W __imp_TestFunction
-; CHECK:      T ImpLibName
-; CHECK-NEXT: T __imp_ImpLibName
-; CHECK:      U AltTestFunction2
-; CHECK-NEXT: W ImpLibName2
-; CHECK:      U __imp_AltTestFunction2
-; CHECK-NEXT: W __imp_ImpLibName2
-; CHECK:      T ImpLibName3
-; CHECK-NEXT: T __imp_ImpLibName3
+; CHECK: T TestFunction
+; CHECK: I __imp_TestFunction
+; CHECK: T ImpLibName
+; CHECK: I __imp_ImpLibName
+; CHECK: T ImpLibName2
+; CHECK: I __imp_ImpLibName2
+; CHECK: T ImpLibName3
+; CHECK: I __imp_ImpLibName3
 
-; ARCH-NOT: unknown arch
+; CONTENTS: {{.*}}(dtest_s00000.o)
+; CONTENTS: Contents of section .idata$6:
+; CONTENTS-NEXT:  ..AltTestFunctio
+; CONTENTS-NEXT:  n.
+; CONTENTS: __imp_TestFunction
 
-; SYMBOLS:        Symbol {
-; SYMBOLS:          Name: TestFunction
-; SYMBOLS-NEXT:     Value: 0
-; SYMBOLS-NEXT:     Section: IMAGE_SYM_UNDEFINED (0)
-; SYMBOLS-NEXT:     BaseType: Null (0x0)
-; SYMBOLS-NEXT:     ComplexType: Null (0x0)
-; SYMBOLS-NEXT:     StorageClass: WeakExternal (0x69)
-; SYMBOLS-NEXT:     AuxSymbolCount: 1
-; SYMBOLS-NEXT:     AuxWeakExternal {
-; SYMBOLS-NEXT:       Linked: AltTestFunction (2)
-; SYMBOLS-NEXT:       Search: Alias (0x3)
-; SYMBOLS-NEXT:     }
-; SYMBOLS-NEXT:   }
+; CONTENTS: {{.*}}(dtest_s00001.o)
+; CONTENTS: Contents of section .idata$6:
+; CONTENTS-NEXT:  ..ImpLibName..
+; CONTENTS: __imp_ImpLibName
+
+; CONTENTS: {{.*}}(dtest_s00002.o)
+; CONTENTS: Contents of section .idata$6:
+; CONTENTS-NEXT:  ..AltTestFunctio
+; CONTENTS-NEXT:  n2..
+; CONTENTS: __imp_ImpLibName2
+
+; CONTENTS: {{.*}}(dtest_s00003.o)
+; CONTENTS: Contents of section .idata$6:
+; CONTENTS-NEXT:  ..ImpLibName3
+; CONTENTS: __imp_ImpLibName3

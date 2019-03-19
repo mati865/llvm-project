@@ -211,7 +211,7 @@ int llvm::dlltoolDriverMain(llvm::ArrayRef<const char *> ArgsArr) {
   }
 
   if (!Path.empty() &&
-      writeImportLibrary(Def->OutputFile, Path, Def->Exports, Machine, true))
+      writeGnuImportLibrary(Def->OutputFile, Path, Def->Exports, Machine))
     return 1;
   return 0;
 }

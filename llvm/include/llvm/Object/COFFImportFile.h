@@ -107,6 +107,10 @@ Error writeImportLibrary(StringRef ImportName, StringRef Path,
                          ArrayRef<COFFShortExport> Exports,
                          COFF::MachineTypes Machine, bool MinGW);
 
+Error writeGnuImportLibrary(StringRef ImportName, StringRef Path,
+                            ArrayRef<COFFShortExport> Exports,
+                            COFF::MachineTypes Machine);
+
 } // namespace object
 } // namespace llvm
 
