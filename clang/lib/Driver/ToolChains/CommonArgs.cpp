@@ -1185,6 +1185,9 @@ static void AddLibgcc(const llvm::Triple &Triple, const Driver &D,
 
 void tools::AddRunTimeLibs(const ToolChain &TC, const Driver &D,
                            ArgStringList &CmdArgs, const ArgList &Args) {
+  if (TC.getTriple().isRelibc()) {
+    return;
+  };
   // Make use of compiler-rt if --rtlib option is used
   ToolChain::RuntimeLibType RLT = TC.GetRuntimeLibType(Args);
 
