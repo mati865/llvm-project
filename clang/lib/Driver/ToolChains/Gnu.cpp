@@ -333,10 +333,12 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   const llvm::Triple::ArchType Arch = ToolChain.getArch();
   const bool isAndroid = ToolChain.getTriple().isAndroid();
   const bool IsIAMCU = ToolChain.getTriple().isOSIAMCU();
+  const bool IsRelibc = ToolChain.getTriple().isRelibc();
   const bool IsPIE = getPIE(Args, ToolChain);
   const bool HasCRTBeginEndFiles =
-      ToolChain.getTriple().hasEnvironment() ||
-      (ToolChain.getTriple().getVendor() != llvm::Triple::MipsTechnologies);
+      (ToolChain.getTriple().hasEnvironment() ||
+      (ToolChain.getTriple().getVendor() != llvm::Triple::MipsTechnologies)) &&
+      !IsRelibc;
 
   ArgStringList CmdArgs;
 
@@ -416,22 +418,24 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
     if (!isAndroid && !IsIAMCU) {
-      const char *crt1 = nullptr;
-      if (!Args.hasArg(options::OPT_shared)) {
-        if (Args.hasArg(options::OPT_pg))
-          crt1 = "gcrt1.o";
-        else if (IsPIE)
-          crt1 = "Scrt1.o";
-        else
-          crt1 = "crt1.o";
+      if (!IsRelibc) {
+        const char *crt1 = nullptr;
+        if (!Args.hasArg(options::OPT_shared)) {
+          if (Args.hasArg(options::OPT_pg))
+            crt1 = "gcrt1.o";
+          else if (IsPIE)
+            crt1 = "Scrt1.o";
+          else
+            crt1 = "crt1.o";
+        }
+        if (crt1)
+          CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crt1)));
       }
-      if (crt1)
-        CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crt1)));
 
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crti.o")));
     }
 
-    if (IsIAMCU)
+    if (IsIAMCU || IsRelibc)
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crt0.o")));
     else {
       const char *crtbegin;
