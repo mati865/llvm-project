@@ -544,6 +544,10 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
     return "/lib/ld-musl-" + ArchName + ".so.1";
   }
 
+  if (Triple.isRelibc()) {
+    return "/lib/ld64.so.1";
+  }
+
   std::string LibDir;
   std::string Loader;
 

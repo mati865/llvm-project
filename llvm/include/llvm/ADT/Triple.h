@@ -205,6 +205,7 @@ public:
     Musl,
     MuslEABI,
     MuslEABIHF,
+    Relibc,
 
     MSVC,
     Itanium,
@@ -654,6 +655,11 @@ public:
     return getEnvironment() == Triple::Musl ||
            getEnvironment() == Triple::MuslEABI ||
            getEnvironment() == Triple::MuslEABIHF;
+  }
+
+  /// Tests whether the environment is relibc-libc
+  bool isRelibc() const {
+    return getEnvironment() == Triple::Relibc;
   }
 
   /// Tests whether the target is NVPTX (32- or 64-bit).

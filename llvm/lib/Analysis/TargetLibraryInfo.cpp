@@ -442,8 +442,8 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
     TLI.setUnavailable(LibFunc_dunder_isoc99_sscanf);
     TLI.setUnavailable(LibFunc_under_IO_getc);
     TLI.setUnavailable(LibFunc_under_IO_putc);
-    // But, Android and musl have memalign.
-    if (!T.isAndroid() && !T.isMusl())
+    // But, Android, musl and relibc have memalign.
+    if (!T.isAndroid() && !T.isMusl() && !T.isRelibc())
       TLI.setUnavailable(LibFunc_memalign);
     TLI.setUnavailable(LibFunc_fopen64);
     TLI.setUnavailable(LibFunc_fseeko64);
