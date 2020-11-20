@@ -62,7 +62,12 @@ std::string GetExecutablePath(const char *Argv0, bool CanonicalPrefixes) {
       if (llvm::ErrorOr<std::string> P =
               llvm::sys::findProgramByName(ExecutablePath))
         ExecutablePath = *P;
+#ifndef __MINGW32__
     return std::string(ExecutablePath.str());
+#else
+    return llvm::sys::path::convert_to_slash(std::string(ExecutablePath.str()),
+                                             llvm::sys::path::Style::windows);
+#endif
   }
 
   // This just needs to be some symbol in the binary; C++ doesn't
@@ -296,7 +301,12 @@ static void SetInstallDir(SmallVectorImpl<const char *> &argv,
   // Attempt to find the original path used to invoke the driver, to determine
   // the installed path. We do this manually, because we want to support that
   // path being a symlink.
+#ifndef __MINGW32__
   SmallString<128> InstalledPath(argv[0]);
+#else
+  SmallString<128> InstalledPath(llvm::sys::path::convert_to_slash(
+      argv[0], llvm::sys::path::Style::windows));
+#endif
 
   // Do a PATH lookup, if there are no directory components.
   if (llvm::sys::path::filename(InstalledPath) == InstalledPath)
