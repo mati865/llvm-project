@@ -51,8 +51,10 @@ namespace {
   }
 
   inline char preferred_separator(Style style) {
+#ifndef __MINGW32__
     if (real_style(style) == Style::windows)
       return '\\';
+#endif
     return '/';
   }
 
@@ -611,8 +613,10 @@ bool is_separator(char value, Style style) {
 }
 
 StringRef get_separator(Style style) {
+#ifndef __MINGW32__
   if (real_style(style) == Style::windows)
     return "\\";
+#endif
   return "/";
 }
 

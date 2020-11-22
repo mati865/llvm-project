@@ -146,7 +146,12 @@ std::string getMainExecutable(const char *argv0, void *MainExecAddr) {
   if (UTF16ToUTF8(PathName.data(), PathName.size(), PathNameUTF8))
     return "";
 
+#ifndef __MINGW32__
   return std::string(PathNameUTF8.data());
+#else
+  return llvm::sys::path::convert_to_slash(std::string(PathNameUTF8.data()),
+                                           llvm::sys::path::Style::windows);
+#endif
 }
 
 UniqueID file_status::getUniqueID() const {

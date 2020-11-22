@@ -101,8 +101,13 @@ ErrorOr<std::string> sys::findProgramByName(StringRef Name,
   if (std::error_code EC =
           windows::UTF16ToUTF8(U16Result.data(), U16Result.size(), U8Result))
     return EC;
-
+#ifndef __MINGW32__
   return std::string(U8Result.begin(), U8Result.end());
+#else
+  return llvm::sys::path::convert_to_slash(
+      std::string(U8Result.begin(), U8Result.end()),
+      llvm::sys::path::Style::windows);
+#endif
 }
 
 bool MakeErrMsg(std::string *ErrMsg, const std::string &prefix) {
