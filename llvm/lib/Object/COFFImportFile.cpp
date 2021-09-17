@@ -920,7 +920,7 @@ NewArchiveMember ObjectFactory::createGnuIdata(StringRef Sym,
   const std::string StringTable[MaxNumberOfStrings] = {
       ("__imp_" + Sym).str(),
       ImportDescriptorSymbolName,
-      Sym,
+      std::string(Sym),
   };
   uint32_t NumberOfStrings = 2 + (!Data ? 1 : 0);
   uint32_t StringTableOffsets[MaxNumberOfStrings];
@@ -1196,8 +1196,9 @@ Error writeGnuImportLibrary(StringRef ImportName, StringRef Path,
 
     StringRef SymbolName = E.SymbolName.empty() ? E.Name : E.SymbolName;
     ImportNameType NameType = getNameType(SymbolName, E.Name, Machine, true);
-    Expected<std::string> Name =
-        E.ExtName.empty() ? SymbolName : replace(SymbolName, E.Name, E.ExtName);
+    Expected<std::string> Name = E.ExtName.empty()
+                                     ? std::string(SymbolName)
+                                     : replace(SymbolName, E.Name, E.ExtName);
 
     if (!Name)
       return Name.takeError();
