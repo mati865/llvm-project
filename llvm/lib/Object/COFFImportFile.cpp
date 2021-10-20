@@ -175,9 +175,10 @@ static Expected<std::string> replace(StringRef S, StringRef From,
   }
 
   if (Pos == StringRef::npos) {
-    return make_error<StringError>(
-      StringRef(Twine(S + ": replacing '" + From +
-        "' with '" + To + "' failed").str()), object_error::parse_failed);
+    return make_error<StringError>(StringRef(Twine(S + ": replacing '" + From +
+                                                   "' with '" + To + "' failed")
+                                                 .str()),
+                                   object_error::parse_failed);
   }
 
   return (Twine(S.substr(0, Pos)) + To + S.substr(Pos + From.size())).str();
@@ -374,8 +375,7 @@ ObjectFactory::createImportDescriptor(std::vector<uint8_t> &Buffer) {
   };
   // TODO: Name.Offset.Offset here and in the all similar places below
   // suggests a names refactoring. Maybe StringTableOffset.Value?
-  SymbolTable[0].Name.Offset.Offset =
-      sizeof(uint32_t);
+  SymbolTable[0].Name.Offset.Offset = sizeof(uint32_t);
   SymbolTable[5].Name.Offset.Offset =
       sizeof(uint32_t) + ImportDescriptorSymbolName.length() + 1;
   SymbolTable[6].Name.Offset.Offset =
@@ -1105,8 +1105,7 @@ NewArchiveMember ObjectFactory::createWeakExternal(StringRef Sym,
   SymbolTable[3].Name.Offset.Offset =
       sizeof(uint32_t) + Sym.size() + Prefix.size() + 1;
   append(Buffer, SymbolTable);
-  writeStringTable(Buffer, {(Prefix + Sym).str(),
-                            (Prefix + Weak).str()});
+  writeStringTable(Buffer, {(Prefix + Sym).str(), (Prefix + Weak).str()});
 
   // Copied here so we can still use writeStringTable
   char *Buf = Alloc.Allocate<char>(Buffer.size());
@@ -1144,10 +1143,9 @@ Error writeImportLibrary(StringRef ImportName, StringRef Path,
       ImportType = IMPORT_CONST;
 
     StringRef SymbolName = E.SymbolName.empty() ? E.Name : E.SymbolName;
-    ImportNameType NameType = E.Noname
-                                  ? IMPORT_ORDINAL
-                                  : getNameType(SymbolName, E.Name,
-                                                Machine, MinGW);
+    ImportNameType NameType =
+        E.Noname ? IMPORT_ORDINAL
+                 : getNameType(SymbolName, E.Name, Machine, MinGW);
     Expected<std::string> Name = E.ExtName.empty()
                                      ? std::string(SymbolName)
                                      : replace(SymbolName, E.Name, E.ExtName);
