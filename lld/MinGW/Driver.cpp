@@ -546,6 +546,10 @@ bool link(ArrayRef<const char *> argsArr, llvm::raw_ostream &stdoutOS,
     add("-exclude-symbols:" + StringRef(a->getValue()));
 
   std::vector<StringRef> searchPaths;
+  #ifdef __CYGWIN__
+    searchPaths.push_back("/usr/lib");
+    searchPaths.push_back("/usr/lib/w32api");
+  #endif
   for (auto *a : args.filtered(OPT_L)) {
     searchPaths.push_back(a->getValue());
     add("-libpath:" + StringRef(a->getValue()));
