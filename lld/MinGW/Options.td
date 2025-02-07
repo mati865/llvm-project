@@ -65,6 +65,8 @@ def disable_runtime_pseudo_reloc: F<"disable-runtime-pseudo-reloc">,
     HelpText<"Don't do automatic imports that require runtime fixups">;
 def disable_stdcall_fixup: F<"disable-stdcall-fixup">,
     HelpText<"Don't resolve stdcall/fastcall/vectorcall to undecorated symbols">;
+defm dll_search_prefix: EEq<"dll-search-prefix",
+    "Prefer DLL with this prefix if importlib is missing">;
 defm dynamicbase: B_disable<"dynamicbase", "Enable ASLR", "Disable ASLR">;
 def enable_auto_import: F<"enable-auto-import">,
     HelpText<"Automatically import data symbols from other DLLs where needed">;
