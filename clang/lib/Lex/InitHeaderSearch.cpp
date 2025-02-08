@@ -17,7 +17,9 @@
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Path.h"
@@ -73,11 +75,6 @@ public:
   void AddSystemHeaderPrefix(StringRef Prefix, bool IsSystemHeader) {
     SystemHeaderPrefixes.emplace_back(std::string(Prefix), IsSystemHeader);
   }
-
-  /// Add the necessary paths to support a MinGW libstdc++.
-  void AddMinGWCPlusPlusIncludePaths(StringRef Base,
-                                     StringRef Arch,
-                                     StringRef Version);
 
   /// Add paths that should always be searched.
   void AddDefaultCIncludePaths(const llvm::Triple &triple,
@@ -180,15 +177,51 @@ bool InitHeaderSearch::AddUnmappedPath(const Twine &Path, IncludeDirGroup Group,
   return false;
 }
 
-void InitHeaderSearch::AddMinGWCPlusPlusIncludePaths(StringRef Base,
-                                                     StringRef Arch,
-                                                     StringRef Version) {
-  AddPath(Base + "/" + Arch + "/" + Version + "/include/c++",
-          CXXSystem, false);
-  AddPath(Base + "/" + Arch + "/" + Version + "/include/c++/" + Arch,
-          CXXSystem, false);
-  AddPath(Base + "/" + Arch + "/" + Version + "/include/c++/backward",
-          CXXSystem, false);
+struct GccVersion {
+  int Major = -1, Minor = -1, Patch = -1;
+
+  static GccVersion Parse(StringRef VersionStr) {
+    GccVersion Result;
+    SmallVector<StringRef, 3> Parts;
+    VersionStr.split(Parts, '.');
+
+    if (Parts.empty())
+      return Result;
+    if (Parts[0].getAsInteger(10, Result.Major))
+      return Result;
+    if (Parts.size() > 1 && Parts[1].getAsInteger(10, Result.Minor))
+      return Result;
+    if (Parts.size() > 2 && Parts[2].getAsInteger(10, Result.Patch))
+      return Result;
+    return Result;
+  }
+
+  bool operator<=(const GccVersion &Other) const {
+      return Major <= Other.Major && Minor <= Other.Minor && Patch <= Other.Patch;
+    }
+};
+
+// Based on Driver::ToolChains::MinGW::findGccVersion
+static std::optional<SmallString<256>> DetectCygwinGCCPath(StringRef tripleStr) {
+  SmallString<256> BasePath;
+  BasePath += "/usr/lib/gcc/";
+  BasePath += tripleStr;
+  std::optional<SmallString<256>> GccLibDir = std::nullopt;
+  std::error_code EC;
+  auto Version = GccVersion::Parse("0.0.0");
+
+  for (llvm::sys::fs::directory_iterator LI(BasePath, EC), LE; !EC && LI != LE;
+       LI = LI.increment(EC)) {
+    StringRef VersionText = llvm::sys::path::filename(LI->path());
+    auto CandidateVersion = GccVersion::Parse(VersionText);
+    if (CandidateVersion.Major == -1)
+      continue;
+    if (CandidateVersion <= Version)
+      continue;
+    Version = CandidateVersion;
+    GccLibDir = LI->path();
+  }
+  return GccLibDir;
 }
 
 void InitHeaderSearch::AddDefaultCIncludePaths(const llvm::Triple &triple,
@@ -260,19 +293,22 @@ void InitHeaderSearch::AddDefaultCPlusPlusIncludePaths(
   if (!ShouldAddDefaultIncludePaths(triple))
     llvm_unreachable("Include management is handled in the driver.");
 
-  // FIXME: temporary hack: hard-coded paths.
   llvm::Triple::OSType os = triple.getOS();
   switch (os) {
   case llvm::Triple::Win32:
     switch (triple.getEnvironment()) {
     default: llvm_unreachable("Include management is handled in the driver.");
     case llvm::Triple::Cygnus:
-      // Cygwin-1.7
-      AddMinGWCPlusPlusIncludePaths("/usr/lib/gcc", "i686-pc-cygwin", "4.7.3");
-      AddMinGWCPlusPlusIncludePaths("/usr/lib/gcc", "i686-pc-cygwin", "4.5.3");
-      AddMinGWCPlusPlusIncludePaths("/usr/lib/gcc", "i686-pc-cygwin", "4.3.4");
-      // g++-4 / Cygwin-1.5
-      AddMinGWCPlusPlusIncludePaths("/usr/lib/gcc", "i686-pc-cygwin", "4.3.2");
+      SmallString<20> tripleStr;
+      tripleStr.append(triple.getArchName());
+      tripleStr.append("-pc-msys");
+      if (auto gcc_libdir = DetectCygwinGCCPath(tripleStr)) {
+        AddPath(*gcc_libdir, CXXSystem, false);
+        AddPath(*gcc_libdir + "/include/c++", CXXSystem, false);
+        AddPath(*gcc_libdir + "/include/c++/" + tripleStr.str(), CXXSystem,
+                false);
+        AddPath(*gcc_libdir + "/include/c++/backward", CXXSystem, false);
+      }
       break;
     }
     break;
