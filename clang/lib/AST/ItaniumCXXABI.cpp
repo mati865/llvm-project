@@ -236,7 +236,7 @@ public:
 
   CallingConv getDefaultMethodCallConv(bool isVariadic) const override {
     const llvm::Triple &T = Context.getTargetInfo().getTriple();
-    if (!isVariadic && T.isWindowsGNUEnvironment() &&
+    if (!isVariadic && T.isOSCygMing() &&
         T.getArch() == llvm::Triple::x86)
       return CC_X86ThisCall;
     return Context.getTargetInfo().getDefaultCallingConv();

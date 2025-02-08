@@ -745,7 +745,7 @@ std::string ToolChain::buildCompilerRTBasename(const llvm::opt::ArgList &Args,
     break;
   case ToolChain::FT_Shared:
     Suffix = TT.isOSWindows()
-                 ? (TT.isWindowsGNUEnvironment() ? ".dll.a" : ".lib")
+                 ? (TT.isOSCygMing() ? ".dll.a" : ".lib")
                  : ".so";
     break;
   }
