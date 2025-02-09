@@ -1161,6 +1161,11 @@ ObjCRuntime ToolChain::getDefaultObjCRuntime(bool isNonFragile) const {
 
 llvm::ExceptionHandling
 ToolChain::GetExceptionModel(const llvm::opt::ArgList &Args) const {
+  if (getTriple().getEnvironment() == llvm::Triple::Cygnus) {
+    if (getArch() == llvm::Triple::x86_64)
+      return llvm::ExceptionHandling::WinEH;
+    return llvm::ExceptionHandling::DwarfCFI;
+  }
   return llvm::ExceptionHandling::None;
 }
 
