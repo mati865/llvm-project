@@ -35,7 +35,7 @@ config.test_source_root = os.path.dirname(__file__)
 config.test_exec_root = os.path.join(config.lld_obj_root, "test")
 
 llvm_config.use_default_substitutions()
-llvm_config.use_lld()
+llvm_config.use_lld([os.environ.get("WILD_FAKES_DIR")])
 
 tool_patterns = [
     "llc",
